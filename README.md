@@ -27,6 +27,11 @@ nothing to install, and it keeps working with no internet once you have opened i
 - **Every answer is explained.** A miss shows the working line by line, so a wrong
   answer teaches you something instead of just costing you points.
 - **Six leagues** — Bronze, Silver, Gold, Diamond, Platinum, Vibranium.
+- **Practice what you choose.** The *More* button opens twenty-question runs on
+  a single topic, on a whole level of education (Primary, O-level, A-level,
+  University), or at random — at Easy, Medium, Hard or Difficult. Practice
+  tracks your accuracy by topic but leaves your league alone, so the ladder
+  still means something.
 - **Your progress is saved on your device.** No account, no sign-up, no server.
 - **A built-in scientific calculator**, from the *Use Calculator* button on the
   home screen: brackets, powers, roots, logs, trigonometry in degrees or
@@ -54,7 +59,7 @@ Full details in [INSTALL.md](INSTALL.md).
 
 ```bash
 npm install
-npm test     # 168 tests
+npm test     # 186 tests
 npm run serve
 ```
 
@@ -73,8 +78,9 @@ npm run dist     # build the Windows installer into dist/
 | `src/` | The entire app. Deployed to GitHub Pages exactly as it is. |
 | `src/js/` | Question generation, scoring, sessions, storage, explanations. |
 | `src/js/curriculum.js` | What each league asks, how long it allows, and every advanced topic. |
+| `src/js/practice.js` | The *More* section: topic groups, levels, difficulty, and unranked practice pools. |
 | `src/sw.js` | Service worker — precaches everything so it runs offline. |
-| `tests/` | 168 tests over scoring, sessions, storage, questions, explanations, calculator, curriculum. |
+| `tests/` | 186 tests over scoring, sessions, storage, questions, explanations, calculator, curriculum. |
 | `electron/` | Wrapper that turns the same `src/` into a desktop app. |
 | `tools/` | Icon generation, a dev server, and the subpath deployment check. |
 

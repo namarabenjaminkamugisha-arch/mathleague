@@ -97,16 +97,28 @@ export function applyRun(profile, session, summary) {
     };
   }
 
+  // A PRACTICE run is unranked. It still records how you are doing per topic
+  // and counts towards your totals, but it must not move the score, the streak
+  // or the league — otherwise twenty Easy additions would be the quickest way
+  // to reach Vibranium, and the ladder would stop meaning anything.
+  const ranked = !session.practice;
+
   const next = {
     ...profile,
-    score: session.score,
-    streak: session.streak,
-    bestStreak: Math.max(profile.bestStreak || 0, session.bestStreak || 0),
+    score: ranked ? session.score : profile.score,
+    streak: ranked ? session.streak : profile.streak,
+    bestStreak: ranked
+      ? Math.max(profile.bestStreak || 0, session.bestStreak || 0)
+      : profile.bestStreak || 0,
     totalCorrect: (profile.totalCorrect || 0) + summary.correct,
     totalWrong: (profile.totalWrong || 0) + summary.wrong,
     totalRuns: (profile.totalRuns || 0) + 1,
-    bestRun: Math.max(profile.bestRun || 0, summary.gained),
-    hadPerfectRun: profile.hadPerfectRun || (summary.answered >= 5 && summary.accuracy === 100),
+    practiceRuns: (profile.practiceRuns || 0) + (ranked ? 0 : 1),
+    bestRun: ranked
+      ? Math.max(profile.bestRun || 0, summary.gained)
+      : profile.bestRun || 0,
+    hadPerfectRun: profile.hadPerfectRun
+      || (ranked && summary.answered >= 5 && summary.accuracy === 100),
     topicStats,
   };
   return checkAchievements(next);

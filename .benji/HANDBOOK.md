@@ -113,7 +113,34 @@ it cannot build four distinct options, so a generator producing collapsing
 distractors fails loudly in the tests rather than silently shipping a
 three-option question.
 
-## 5. Architecture
+## 5. Practice runs are unranked, on purpose
+
+`practice.js` powers the **More** section: pick a topic, pick a level of
+education, or take anything at random, at one of four difficulties. Every
+practice run is 20 questions.
+
+**A practice run must never move the score, streak or league.** `applyRun()` in
+`storage.js` checks `session.practice` and skips those fields. If practice paid
+league points, twenty Easy additions would be the fastest route to Vibranium and
+the ladder would stop meaning anything. The banner on the quiz screen and the
+line on the results screen both say so, because silently withholding points
+would read as a bug.
+
+Practice *does* record accuracy per topic and count towards lifetime totals —
+that is the part students want, and it cannot be gamed into a rank.
+
+The pool returned by `buildPool()` overrides both the league's topic list and
+its clock, so a Vibranium player practising Arithmetic gets arithmetic on the
+practice clock, not untimed calculus. `nextQuestion()` must not re-read the
+league for a practice run, or a rising score would drag the questions away from
+the topic the player chose.
+
+Difficulty maps to a generator tier *and* a clock. The tier only widens number
+ranges for topics that accept one — mostly arithmetic and early algebra. For
+advanced topics difficulty is the clock alone, which is honest: "harder
+integration by parts" is a different question, not a bigger one.
+
+## 6. Architecture
 
 Deliberate separation — keep it.
 
@@ -161,10 +188,10 @@ UI shows that sentence. Do not replace them with `NaN`.
 
 ---
 
-## 6. Testing
+## 7. Testing
 
 ```bash
-npm test                      # 168 tests, node's built-in runner
+npm test                      # 186 tests, node's built-in runner
 node tools/test-subpath.mjs   # deployment safety
 npm run serve                 # dev server on :5173
 ```
@@ -174,7 +201,7 @@ over testing through the DOM.
 
 ---
 
-## 7. Facts worth not rediscovering
+## 8. Facts worth not rediscovering
 
 - **Repo owner is `namarabenjaminkamugisha-arch`.** Benjamin also has a
   `jusbenji-png` account, and the first five commits are attributed to it

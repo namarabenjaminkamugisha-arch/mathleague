@@ -67,6 +67,64 @@
 
     <div class="calc-cta">
       <button class="btn btn-calc" id="btnCalculator">Use Calculator</button>
+      <button class="btn btn-calc" id="btnMore">More</button>
+    </div>
+  </main>
+
+  <!-- ── more: practice ──────────────────────────────────── -->
+  <main class="screen" id="screen-more">
+    <div class="card">
+      <h2 class="card-title">More practice</h2>
+      <p class="sub-note">Twenty questions a run, on whatever you choose.
+         Practice sharpens you and tracks your accuracy by topic, but it does
+         not change your score or league — only a proper run does that.</p>
+
+      <h3 class="sub-title">Difficulty</h3>
+      <div class="mode-row" id="modeRow" role="group" aria-label="Difficulty"></div>
+      <p class="mode-blurb" id="modeBlurb"></p>
+
+      <div class="more-actions">
+        <button class="btn btn-more" id="btnByTopic">
+          <span class="more-name">By topic</span>
+          <span class="more-sub">Pick one subject, like Trigonometry</span>
+        </button>
+        <button class="btn btn-more" id="btnByLevel">
+          <span class="more-name">By level</span>
+          <span class="more-sub">Everything at O-level, A-level or University</span>
+        </button>
+        <button class="btn btn-more btn-more-accent" id="btnRandom">
+          <span class="more-name">Random</span>
+          <span class="more-sub">Anything at all, from any topic</span>
+        </button>
+      </div>
+
+      <div class="result-actions">
+        <button class="btn btn-ghost" id="btnMoreBack">Back</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── more: pick a topic ──────────────────────────────── -->
+  <main class="screen" id="screen-topics">
+    <div class="card">
+      <h2 class="card-title">Choose a topic</h2>
+      <p class="sub-note" id="topicsNote"></p>
+      <div class="pick-list" id="topicList2"></div>
+      <div class="result-actions">
+        <button class="btn btn-ghost" id="btnTopicsBack">Back</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── more: pick a level ──────────────────────────────── -->
+  <main class="screen" id="screen-levels">
+    <div class="card">
+      <h2 class="card-title">Choose a level</h2>
+      <p class="sub-note" id="levelsNote"></p>
+      <div class="pick-list" id="levelList"></div>
+      <div class="result-actions">
+        <button class="btn btn-ghost" id="btnLevelsBack">Back</button>
+      </div>
     </div>
   </main>
 
@@ -120,6 +178,8 @@
         <span class="timer-text" id="timerText">45</span>
       </div>
     </div>
+
+    <div class="practice-banner" id="practiceBanner" hidden></div>
 
     <div class="card question-card" id="questionCard">
       <div class="q-topic" id="qTopic">Addition</div>

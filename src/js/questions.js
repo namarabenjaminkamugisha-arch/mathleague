@@ -199,13 +199,23 @@ function normaliseSteps(steps) {
 /** −0 prints as "-0", which looks like a mistake to a student. */
 const zeroSafe = n => (typeof n === 'number' && n === 0 ? 0 : n);
 
-export function generateQuestion(leagueKey = 'bronze', avoidTopics = []) {
-  const tier = LEAGUE_TIER[leagueKey] || 1;
-  let pool = planFor(leagueKey).topics;
-  const fresh = pool.filter(t => !avoidTopics.includes(t));
-  if (fresh.length >= 2) pool = fresh;
+/**
+ * Generate one question.
+ *
+ * @param {string} leagueKey
+ * @param {string[]} avoidTopics  recently seen topics, to reduce repeats
+ * @param {{topics: string[], tier: number}} [pool]
+ *        An explicit pool, used by practice runs. When given it replaces the
+ *        league's own topic list and difficulty entirely, so a practice run
+ *        stays on the topic the player chose no matter which league they are in.
+ */
+export function generateQuestion(leagueKey = 'bronze', avoidTopics = [], pool = null) {
+  const tier = pool?.tier || LEAGUE_TIER[leagueKey] || 1;
+  let pool_ = pool?.topics?.length ? pool.topics : planFor(leagueKey).topics;
+  const fresh = pool_.filter(t => !avoidTopics.includes(t));
+  if (fresh.length >= 2) pool_ = fresh;
 
-  const topicKey = pick(pool);
+  const topicKey = pick(pool_);
   const generator = GENERATORS[topicKey] || ADVANCED_GENERATORS[topicKey];
   if (!generator) throw new Error(`no generator for topic "${topicKey}"`);
   const q = generator(tier);

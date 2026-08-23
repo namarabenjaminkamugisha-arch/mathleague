@@ -7,6 +7,7 @@ import {
   resolveAnswer, leagueForScore, POWERUPS, buyPowerup, canAfford,
 } from './scoring.js';
 import { planFor } from './curriculum.js';
+import { PRACTICE_LENGTH } from './practice.js';
 
 export const QUESTION_SECONDS = 45;
 export const RUN_LENGTH = 10;          // questions per run
@@ -20,7 +21,18 @@ export function timeBonusFor(secondsLeft, total = QUESTION_SECONDS) {
 }
 
 /** A brand-new session for a player profile. */
-export function startSession(profile, { length } = {}) {
+/**
+ * Start a run.
+ *
+ * @param {object} profile
+ * @param {object} [opts]
+ * @param {number} [opts.length]  override the number of questions
+ * @param {object} [opts.pool]    a practice pool from practice.js. When given,
+ *   the run draws only from those topics, at that difficulty, and is UNRANKED —
+ *   see applyRun() in storage.js. Without it the run follows the player's
+ *   league in the usual way.
+ */
+export function startSession(profile, { length, pool = null } = {}) {
   const league = leagueForScore(profile.score);
   const plan = planFor(league.key);
   const s = {
@@ -30,8 +42,10 @@ export function startSession(profile, { length } = {}) {
     bestStreak: profile.bestStreak || 0,
     dailyStreak: profile.dailyStreak || 1,
     league: league.key,
+    pool,
+    practice: !!pool,
     index: 0,
-    length: length || plan.questions,
+    length: length || (pool ? PRACTICE_LENGTH : plan.questions),
     correct: 0,
     wrong: 0,
     skipped: 0,
@@ -44,8 +58,8 @@ export function startSession(profile, { length } = {}) {
     question: null,
     // null means untimed - the top league needs real working, and a clock
     // would only rush it. Everything downstream must handle null, not 0.
-    secondsLeft: plan.seconds,
-    questionSeconds: plan.seconds,
+    secondsLeft: pool ? pool.seconds : plan.seconds,
+    questionSeconds: pool ? pool.seconds : plan.seconds,
     finished: false,
   };
   return nextQuestion(s);
@@ -54,15 +68,17 @@ export function startSession(profile, { length } = {}) {
 /** Advance to the next question (or finish the run). */
 export function nextQuestion(s) {
   if (s.index >= s.length) return { ...s, finished: true, question: null };
-  const league = leagueForScore(s.score).key;
-  const q = generateQuestion(league, s.recentTopics.slice(-3));
-  const plan = planFor(league);
+  // A practice run keeps its own pool and clock; only a league run re-reads
+  // the league, which can change mid-run as the score climbs.
+  const league = s.practice ? s.league : leagueForScore(s.score).key;
+  const q = generateQuestion(league, s.recentTopics.slice(-3), s.pool);
+  const seconds = s.pool ? s.pool.seconds : planFor(league).seconds;
   return {
     ...s,
     league,
     question: q,
-    secondsLeft: plan.seconds,
-    questionSeconds: plan.seconds,
+    secondsLeft: seconds,
+    questionSeconds: seconds,
     freeze: false,
     fiftyOptions: null,
     revealed: 0,

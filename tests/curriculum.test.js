@@ -105,6 +105,12 @@ for (const league of LEAGUE_ORDER) {
 }
 
 // ── the maths itself, checked independently of the generator ───────────────
+//
+// Expectations below are written `... + 0`. JavaScript produces -0 from things
+// like (-1)*0, assert.equal compares with Object.is, and Object.is(-0, 0) is
+// false. The app normalises -0 to 0 before storing an answer (a student should
+// never be shown "-0"), so these checks must normalise the same way or they
+// fail at random depending on the numbers drawn.
 
 const sampleUntil = (league, topicKey, tries = 4000) => {
   for (let i = 0; i < tries; i += 1) {
@@ -123,7 +129,7 @@ test('quadratic: the given root really solves the equation', () => {
     const b = (m[1] === '−' ? -1 : 1) * Number(m[2]);
     const c = (m[3] === '−' ? -1 : 1) * Number(m[4]);
     const x = q.answer;
-    assert.equal(x * x + b * x + c, 0,
+    assert.equal(x * x + b * x + c + 0, 0,
       `${q.prompt} — root ${x} does not satisfy it`);
   }
 });
@@ -176,7 +182,7 @@ test('sequences: the arithmetic nth term is right', () => {
     const m = q.prompt.match(/starts at (-?\d+) with common difference (-?\d+)\. Find the (\d+)th/);
     if (!m) continue;                       // the GP variant, checked below
     const [a, d, n] = m.slice(1, 4).map(Number);
-    assert.equal(q.answer, a + (n - 1) * d, q.prompt);
+    assert.equal(q.answer, a + (n - 1) * d + 0, q.prompt);
   }
 });
 
@@ -210,7 +216,7 @@ test('vectors: the scalar product is recomputed', () => {
     assert.ok(m, q.prompt);
     const a = m[1].split(',').map(Number);
     const b = m[2].split(',').map(Number);
-    assert.equal(q.answer, a[0] * b[0] + a[1] * b[1] + a[2] * b[2], q.prompt);
+    assert.equal(q.answer, (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) + 0, q.prompt);
   }
 });
 
@@ -220,7 +226,7 @@ test('HCF and LCM agree with the two numbers given', () => {
     const q = sampleUntil('silver', 'hcflcm');
     const [a, b] = (q.prompt.match(/\d+/g) || []).map(Number);
     const expected = q.topic === 'HCF' ? g(a, b) : (a * b) / g(a, b);
-    assert.equal(q.answer, expected, q.prompt);
+    assert.equal(q.answer, expected + 0, q.prompt);
   }
 });
 

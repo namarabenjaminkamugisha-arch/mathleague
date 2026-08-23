@@ -14,6 +14,10 @@ import {
 import { fmt } from './util.js';
 import { initCalculator, focusCalculator } from './calc-ui.js';
 import { LEAGUE_ORDER, planFor } from './curriculum.js';
+import {
+  DIFFICULTIES, DIFFICULTY_ORDER, difficultyFor, TOPIC_GROUPS, LEVELS,
+  buildPool, PRACTICE_LENGTH,
+} from './practice.js';
 
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -30,6 +34,16 @@ const ACH_ICON = {
 };
 
 let profile = loadProfile();
+
+// The chosen practice difficulty, remembered between visits so a student who
+// works at one level does not have to reset it every time.
+const DIFFICULTY_KEY = 'mathleague.practice.difficulty';
+let practiceDifficulty = (() => {
+  try {
+    const saved = localStorage.getItem(DIFFICULTY_KEY);
+    return DIFFICULTIES[saved] ? saved : 'medium';
+  } catch { return 'medium'; }
+})();
 let session = null;
 let timerId = null;
 let awaitingNext = false;   // showing feedback, waiting for the player to continue
@@ -208,7 +222,10 @@ function renderQuestion() {
   $('answerInput').hidden = isChoice;
   $('btnSubmit').hidden = isChoice;
   $('choices').hidden = !isChoice;
-  if (isChoice) renderChoices(q);
+  // Clear the old buttons when this question is not multiple choice. Leaving
+  // the previous question's options in the DOM - hidden, and disabled from
+  // their own feedback - is untidy and confusing to anything reading the page.
+  if (isChoice) renderChoices(q); else $('choices').replaceChildren();
 
   renderDots();
   renderTimer();
@@ -232,6 +249,68 @@ function onChoice(index) {
   showFeedback(outcome, false);
 }
 
+// ── more: practice ──────────────────────────────────────────
+
+function setDifficulty(key) {
+  practiceDifficulty = DIFFICULTIES[key] ? key : 'medium';
+  try { localStorage.setItem(DIFFICULTY_KEY, practiceDifficulty); } catch { /* private mode */ }
+  renderMore();
+}
+
+function renderMore() {
+  const row = $('modeRow');
+  row.replaceChildren();
+  for (const key of DIFFICULTY_ORDER) {
+    const d = DIFFICULTIES[key];
+    const b = el('button', 'mode-btn', d.label);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(key === practiceDifficulty));
+    if (key === practiceDifficulty) b.classList.add('is-on');
+    b.addEventListener('click', () => setDifficulty(key));
+    row.appendChild(b);
+  }
+  const d = difficultyFor(practiceDifficulty);
+  $('modeBlurb').textContent = `${d.blurb} — ${d.seconds} seconds a question.`;
+}
+
+function renderTopicPicker() {
+  const d = difficultyFor(practiceDifficulty);
+  $('topicsNote').textContent =
+    `${PRACTICE_LENGTH} questions from the topic you pick, at ${d.label}.`;
+  const box = $('topicList2');
+  box.replaceChildren();
+  for (const g of TOPIC_GROUPS) {
+    const b = el('button', 'pick');
+    b.type = 'button';
+    b.append(el('span', 'pick-name', g.name),
+             el('span', 'pick-stage', g.stage));
+    b.addEventListener('click', () => startPractice('topic', g.key));
+    box.appendChild(b);
+  }
+}
+
+function renderLevelPicker() {
+  const d = difficultyFor(practiceDifficulty);
+  $('levelsNote').textContent =
+    `${PRACTICE_LENGTH} questions from across the level you pick, at ${d.label}.`;
+  const box = $('levelList');
+  box.replaceChildren();
+  for (const l of LEVELS) {
+    const b = el('button', 'pick pick-wide');
+    b.type = 'button';
+    b.append(el('span', 'pick-name', l.name),
+             el('span', 'pick-blurb', l.blurb));
+    b.addEventListener('click', () => startPractice('level', l.key));
+    box.appendChild(b);
+  }
+}
+
+function startPractice(kind, key) {
+  const pool = buildPool(kind, key, practiceDifficulty);
+  if (!pool) { toast('That set of questions is not available', 'is-bad'); return; }
+  startRun({ pool });
+}
+
 // ── the loop ────────────────────────────────────────────────
 function startTimer() {
   stopTimer();
@@ -248,14 +327,32 @@ function stopTimer() {
   timerId = null;
 }
 
-function beginRun() {
+/** Start a run. Pass a practice pool to run one of the "More" quizzes. */
+function startRun({ pool = null } = {}) {
   profile = registerPlay(profile);
   saveProfile(profile);
-  session = startSession(profile);
+  session = startSession(profile, { pool });
   awaitingNext = false;
+  renderPracticeBanner();
   show('quiz');
   renderQuestion();
   startTimer();
+}
+
+/** A league run: follows your league, and counts towards it. */
+function beginRun() {
+  startRun();
+}
+
+function renderPracticeBanner() {
+  const banner = $('practiceBanner');
+  if (!session || !session.practice) { banner.hidden = true; return; }
+  banner.replaceChildren(
+    el('span', 'practice-tag', 'Practice'),
+    el('span', 'practice-label', session.pool.label),
+    el('span', 'practice-note', 'Your league is unaffected'),
+  );
+  banner.hidden = false;
 }
 
 function handleTimeout() {
@@ -341,14 +438,28 @@ function finishRun() {
   profile = updated;
   saveProfile(profile);
 
-  $('resultBadge').textContent = sum.promoted
-    ? `Promoted to ${sum.league.name}!` : 'Run complete';
-  $('resultBadge').classList.toggle('is-promo', sum.promoted);
+  const isPractice = !!session.practice;
 
-  $('resultScore').textContent = `${sum.gained >= 0 ? '+' : ''}${sum.gained}`;
-  $('resultScore').className = `result-score ${sum.gained > 0 ? 'is-up' : sum.gained < 0 ? 'is-down' : ''}`;
-  $('resultSub').textContent =
-    `${sum.correct} of ${sum.answered} correct · ${sum.accuracy}% accuracy · now ${sum.score} points`;
+  $('resultBadge').textContent = isPractice
+    ? `${session.pool.label} complete`
+    : sum.promoted ? `Promoted to ${sum.league.name}!` : 'Run complete';
+  $('resultBadge').classList.toggle('is-promo', !isPractice && sum.promoted);
+
+  $('resultScore').textContent = isPractice
+    ? `${sum.accuracy}%`
+    : `${sum.gained >= 0 ? '+' : ''}${sum.gained}`;
+  $('resultScore').className = `result-score ${
+    isPractice ? '' : sum.gained > 0 ? 'is-up' : sum.gained < 0 ? 'is-down' : ''}`;
+
+  // A practice run shows accuracy rather than points, because points were
+  // never applied - saying "+180" and then leaving the score untouched would
+  // read as a bug.
+  // For practice, quote the profile's REAL score, not the run's internal
+  // tally. sum.score includes points the run notionally earned but never
+  // applied, so quoting it would claim a total the player does not have.
+  $('resultSub').textContent = isPractice
+    ? `${sum.correct} of ${sum.answered} correct · your ${profile.score} points and your league are unchanged`
+    : `${sum.correct} of ${sum.answered} correct · ${sum.accuracy}% accuracy · now ${sum.score} points`;
 
   const grid = $('resultGrid');
   grid.replaceChildren();
@@ -518,6 +629,15 @@ function renderHelp() {
           such as a derivative or an integral.</li>
       <li>Get one wrong and the full working is shown, line by line.</li>
     </ul>
+    <h3>More practice</h3>
+    <p>The <strong>More</strong> button on the home screen opens practice runs:
+       twenty questions on one topic, twenty from a whole level of education,
+       or twenty at random from anything. Pick Easy, Medium, Hard or Difficult
+       first — that sets how big the numbers get and how long you have.</p>
+    <p>Practice records how you are doing on each topic, and you will see it in
+       Progress. It does <strong>not</strong> change your score or your league:
+       otherwise twenty easy sums would be the quickest way to the top, and the
+       leagues would stop meaning anything.</p>
     <h3>Power-ups</h3>
     <ul>${Object.values(POWERUPS).map(p =>
       `<li><strong>${p.name}</strong> (${p.cost} pts) — ${p.blurb}</li>`).join('')}</ul>
@@ -530,7 +650,13 @@ function renderHelp() {
 // ── wiring ──────────────────────────────────────────────────
 function init() {
   $('btnPlay').addEventListener('click', beginRun);
-  $('btnAgain').addEventListener('click', beginRun);
+  // Repeat whatever was just played: another practice run of the same kind,
+  // or another league run. Dropping a practice player into a ranked run
+  // without saying so would be a nasty surprise.
+  $('btnAgain').addEventListener('click', () => {
+    const pool = session && session.practice ? session.pool : null;
+    startRun({ pool });
+  });
   $('btnHome').addEventListener('click', () => { session = null; renderHeader(); renderLadder(); show('home'); });
   $('btnQuit').addEventListener('click', quitRun);
   $('answerForm').addEventListener('submit', onSubmit);
@@ -540,6 +666,14 @@ function init() {
   $('btnAchievements').addEventListener('click', () => { renderAchievements(); show('achievements'); });
   $('btnAchBack').addEventListener('click', () => show('home'));
   $('btnHelp').addEventListener('click', () => { renderHelp(); show('help'); });
+
+  $('btnMore').addEventListener('click', () => { renderMore(); show('more'); });
+  $('btnMoreBack').addEventListener('click', () => show('home'));
+  $('btnByTopic').addEventListener('click', () => { renderTopicPicker(); show('topics'); });
+  $('btnTopicsBack').addEventListener('click', () => { renderMore(); show('more'); });
+  $('btnByLevel').addEventListener('click', () => { renderLevelPicker(); show('levels'); });
+  $('btnLevelsBack').addEventListener('click', () => { renderMore(); show('more'); });
+  $('btnRandom').addEventListener('click', () => startPractice('random', null));
   $('btnCalculator').addEventListener('click', () => { show('calc'); focusCalculator(); });
   $('btnCalcBack').addEventListener('click', () => show('home'));
   initCalculator();
