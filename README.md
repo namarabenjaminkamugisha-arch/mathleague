@@ -10,7 +10,16 @@ nothing to install, and it keeps working with no internet once you have opened i
 
 ## What it does
 
-- **Ten questions a run**, drawn from addition, subtraction, multiplication and division.
+- **Six leagues, six syllabuses.** Bronze is 20 questions of mental arithmetic;
+  by Vibranium you are doing integration by substitution, matrices and limits.
+  Topics follow the Ugandan syllabus, from UNEB O-level through A-level Pure
+  Maths to first-year university.
+- **The clock matches the maths.** 45 seconds a question at Bronze, five
+  minutes at Platinum, and no time limit at all in Vibranium — rewarding haste
+  on a question that needs a page of working would be the wrong incentive.
+- **Multiple choice where it belongs.** Questions whose answer is an expression
+  rather than a number — a derivative, an integral, a factorisation — are asked
+  as four options, the way UNEB and university papers ask them.
 - **Speed matters** — answer before the clock runs down for a bonus on top of the base score.
 - **Streaks** build as you keep getting them right, and reset when you miss.
 - **Five power-ups**, each costing points: reveal a step, skip, 50/50, freeze the
@@ -45,7 +54,7 @@ Full details in [INSTALL.md](INSTALL.md).
 
 ```bash
 npm install
-npm test     # 129 tests
+npm test     # 168 tests
 npm run serve
 ```
 
@@ -63,8 +72,9 @@ npm run dist     # build the Windows installer into dist/
 |---|---|
 | `src/` | The entire app. Deployed to GitHub Pages exactly as it is. |
 | `src/js/` | Question generation, scoring, sessions, storage, explanations. |
+| `src/js/curriculum.js` | What each league asks, how long it allows, and every advanced topic. |
 | `src/sw.js` | Service worker — precaches everything so it runs offline. |
-| `tests/` | 129 tests over scoring, sessions, storage, questions, explanations, calculator. |
+| `tests/` | 168 tests over scoring, sessions, storage, questions, explanations, calculator, curriculum. |
 | `electron/` | Wrapper that turns the same `src/` into a desktop app. |
 | `tools/` | Icon generation, a dev server, and the subpath deployment check. |
 

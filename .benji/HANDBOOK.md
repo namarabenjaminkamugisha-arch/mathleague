@@ -84,7 +84,36 @@ path, filename or the service worker.** It is the only check that catches this.
 
 ---
 
-## 4. Architecture
+## 4. The league ladder
+
+`curriculum.js` is the single source of truth for what each league asks, how
+many questions a run is, and how long each question allows. Changing the game's
+difficulty means editing `LEAGUE_PLAN` there — nothing else.
+
+Two rules that are easy to break:
+
+- **Every answer is one number, or one of four options.** Free-text algebra
+  cannot be marked reliably, and telling a correct student they are wrong is
+  worse than asking a narrower question. If a topic's answer is an expression
+  (a derivative, an integral, a factorisation), make it multiple choice with
+  `choiceQuestion()` rather than trying to parse what they typed.
+- **Working is written as plain strings in `curriculum.js`**, and converted to
+  the `{ text }` objects the UI renders by `normaliseSteps()` in `questions.js`.
+  A generator returning a bare string straight to the UI renders a blank panel.
+
+`seconds: null` means untimed. Everything downstream must test for `null`, not
+for zero — `tick()` refuses to expire, and no speed bonus is awarded, because
+rewarding haste on a question that needs a page of working is the wrong
+incentive.
+
+Distractors for multiple choice should be the mistakes students actually make
+(a sign error, a forgotten chain rule), not random noise — otherwise the right
+answer stands out and the question tests nothing. `choiceQuestion()` throws if
+it cannot build four distinct options, so a generator producing collapsing
+distractors fails loudly in the tests rather than silently shipping a
+three-option question.
+
+## 5. Architecture
 
 Deliberate separation — keep it.
 
@@ -132,10 +161,10 @@ UI shows that sentence. Do not replace them with `NaN`.
 
 ---
 
-## 5. Testing
+## 6. Testing
 
 ```bash
-npm test                      # 129 tests, node's built-in runner
+npm test                      # 168 tests, node's built-in runner
 node tools/test-subpath.mjs   # deployment safety
 npm run serve                 # dev server on :5173
 ```
@@ -145,7 +174,7 @@ over testing through the DOM.
 
 ---
 
-## 6. Facts worth not rediscovering
+## 7. Facts worth not rediscovering
 
 - **Repo owner is `namarabenjaminkamugisha-arch`.** Benjamin also has a
   `jusbenji-png` account, and the first five commits are attributed to it
@@ -157,9 +186,15 @@ over testing through the DOM.
   Certificates run $200-400/year. The browser install has no such warning, so
   this is not worth fixing.
 - **Electron code signing is disabled** in `package.json`
-  (`signAndEditExecutable`, `verifyUpdateCodeSignature` both false). This was
-  needed to get past a `winCodeSign` symlink extraction failure on Windows.
-  Turning it back on will break `npm run dist`.
+  (`signAndEditExecutable`, `verifyUpdateCodeSignature` both false), because
+  electron-builder's exe-editing step first extracts a `winCodeSign` bundle
+  full of macOS symlinks, and Windows refuses to create those without
+  elevation. Turning it back on will break `npm run dist`.
+- **The exe icon is set by `electron/after-pack.cjs`, using rcedit.** That is
+  the step the disabled flag above would otherwise perform. Without it the
+  packaged exe silently keeps Electron's default atom, which is what the
+  desktop shortcut shows — the app looks wrong on the desktop while looking
+  right everywhere else. Do not remove the hook.
 - **`isDev = !app.isPackaged`** in `electron/main.cjs` — that is what keeps
   DevTools and the console window out of the packaged app.
 - **Progress is stored in `localStorage`** and never leaves the device. There
