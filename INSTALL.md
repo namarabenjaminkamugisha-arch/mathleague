@@ -51,15 +51,17 @@ the keyboard works as well as the buttons.
 
 ## 1. WINDOWS
 
-**Where the installer is:**
-`dist\MathLeague-Setup-1.0.0.exe` inside the project folder
-`C:\Users\LENOVO\Projects\mathleague`
-It is about 78 MB.
+**Where to get the installer:**
+Download the latest `MathLeague-Setup-*.exe` from the
+[Releases page](../../releases). It is about 79 MB.
+
+If you are building it yourself, it appears in the `dist` folder after
+running `npm run dist`.
 
 **Steps:**
 
-1. Open File Explorer and go to that `dist` folder.
-2. Double-click `MathLeague-Setup-1.0.0.exe`.
+1. Open the downloaded file's folder in File Explorer.
+2. Double-click the `MathLeague-Setup-*.exe` file.
 3. Windows will show a blue **"Windows protected your PC"** screen. This
    happens because the app is not digitally signed with a paid certificate —
    it does not mean anything is wrong with it. Click the small grey text
