@@ -680,3 +680,29 @@ button { font-family: inherit; }
 }
 .practice-label { font-size: 14px; color: var(--text); margin-right: auto; }
 .practice-note { font-size: 12px; color: var(--muted); }
+
+/* ── rewarded advert offer ───────────────────────────────── */
+
+/* Shown only on a power-up the player cannot afford, and only when the rules
+   in ads.js allow an advert. A player with points never sees this at all. */
+.pu.is-earnable {
+  border-color: #2b4a3a;
+  opacity: 1;
+}
+.pu.is-earnable:hover { border-color: var(--good); background: #12211a; }
+.pu.is-earnable .pu-cost {
+  color: var(--good);
+  font-weight: 700;
+}
+
+.site-foot { margin-top: 26px; text-align: center; }
+.site-foot a {
+  display: inline-block;
+  /* padded to a comfortable tap target rather than a 17px sliver of text */
+  padding: 12px 18px;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: none;
+}
+.site-foot a:hover { color: var(--sky-pale); text-decoration: underline; }
+.site-foot a:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }

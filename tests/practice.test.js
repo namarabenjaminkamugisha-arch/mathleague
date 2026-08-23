@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   DIFFICULTIES, DIFFICULTY_ORDER, difficultyFor, TOPIC_GROUPS, LEVELS,
   ALL_TOPICS, buildPool, unknownTopics, PRACTICE_LENGTH, topicGroupFor, levelFor,
@@ -213,4 +214,17 @@ test('every practice question can be answered and marked', () => {
         `${g.key}: "${q.promptPlain}" rejected its own answer`);
     }
   }
+});
+
+test("the header must never show a practice run's internal score", () => {
+  // The session keeps its own score during practice, but it is never banked.
+  // Rendering it made the header fall to 0 after a bad practice run while the
+  // results line said the points were unchanged - the player would think they
+  // had lost everything. app.js must read profile.score during practice.
+  const src = readFileSync(new URL('../src/js/app.js', import.meta.url), 'utf8');
+  const fn = src.split('function renderHeader()')[1].split('\n}')[0];
+  assert.ok(/session[.]practice/.test(fn),
+    'renderHeader must check whether this is a practice run');
+  assert.ok(/profile[.]score/.test(fn),
+    'renderHeader must fall back to the real profile score');
 });

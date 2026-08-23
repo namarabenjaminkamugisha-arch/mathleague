@@ -32,6 +32,10 @@ nothing to install, and it keeps working with no internet once you have opened i
   University), or at random — at Easy, Medium, Hard or Difficult. Practice
   tracks your accuracy by topic but leaves your league alone, so the ladder
   still means something.
+- **No adverts, unless you ask for one.** No banners, nothing that interrupts.
+  If you want a power-up you cannot afford, you may choose to watch a short
+  advert for it — declining costs you nothing, and watching never affects your
+  score or your league.
 - **Your progress is saved on your device.** No account, no sign-up, no server.
 - **A built-in scientific calculator**, from the *Use Calculator* button on the
   home screen: brackets, powers, roots, logs, trigonometry in degrees or
@@ -59,7 +63,7 @@ Full details in [INSTALL.md](INSTALL.md).
 
 ```bash
 npm install
-npm test     # 186 tests
+npm test     # 202 tests
 npm run serve
 ```
 
@@ -79,8 +83,9 @@ npm run dist     # build the Windows installer into dist/
 | `src/js/` | Question generation, scoring, sessions, storage, explanations. |
 | `src/js/curriculum.js` | What each league asks, how long it allows, and every advanced topic. |
 | `src/js/practice.js` | The *More* section: topic groups, levels, difficulty, and unranked practice pools. |
+| `src/js/ads.js` | Rewarded adverts only — opt-in, capped, and never worth points. Configured in `ads-config.js`. |
 | `src/sw.js` | Service worker — precaches everything so it runs offline. |
-| `tests/` | 186 tests over scoring, sessions, storage, questions, explanations, calculator, curriculum. |
+| `tests/` | 202 tests over scoring, sessions, storage, questions, explanations, calculator, curriculum. |
 | `electron/` | Wrapper that turns the same `src/` into a desktop app. |
 | `tools/` | Icon generation, a dev server, and the subpath deployment check. |
 

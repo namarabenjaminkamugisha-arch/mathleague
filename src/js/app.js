@@ -14,6 +14,7 @@ import {
 import { fmt } from './util.js';
 import { initCalculator, focusCalculator } from './calc-ui.js';
 import { LEAGUE_ORDER, planFor } from './curriculum.js';
+import { canWatch, watchRewarded } from './ads.js';
 import {
   DIFFICULTIES, DIFFICULTY_ORDER, difficultyFor, TOPIC_GROUPS, LEVELS,
   buildPool, PRACTICE_LENGTH,
@@ -47,6 +48,7 @@ let practiceDifficulty = (() => {
 let session = null;
 let timerId = null;
 let awaitingNext = false;   // showing feedback, waiting for the player to continue
+let adPending = false;      // an advert is on screen; ignore taps until it ends
 
 // ── screens ─────────────────────────────────────────────────
 function show(name) {
@@ -72,8 +74,14 @@ function bump(node) {
 
 // ── header ──────────────────────────────────────────────────
 function renderHeader() {
-  const score = session ? session.score : profile.score;
-  const streak = session ? session.streak : profile.streak;
+  // A practice run keeps its own running score internally, but that score is
+  // never banked. Showing it in the header made the display fall to 0 while
+  // the results line correctly said the points were unchanged - the player
+  // would reasonably think they had just lost everything. During practice the
+  // header shows the real, untouched profile figures.
+  const isPractice = !!(session && session.practice);
+  const score = session && !isPractice ? session.score : profile.score;
+  const streak = session && !isPractice ? session.streak : profile.streak;
 
   if ($('statScore').textContent !== String(score)) bump($('statScore'));
   $('statScore').textContent = score;
@@ -148,21 +156,30 @@ function renderTimer() {
 function renderPowerups() {
   const box = $('powerups');
   box.replaceChildren();
+  // The advert offer only appears on power-ups the player cannot afford, and
+  // only when the rules in ads.js allow one. It is never shown otherwise, so
+  // a player with points never sees an advert at all.
+  const offer = canWatch().ok;
   for (const key of ['reveal', 'skip', 'fifty', 'freeze', 'shield']) {
     const p = POWERUPS[key];
+    const affordable = canAfford(session.score, key);
+    const earnable = !affordable && offer;
     const b = el('button', 'pu');
     b.type = 'button';
-    b.disabled = !canAfford(session.score, key) || awaitingNext;
+    b.disabled = (!affordable && !earnable) || awaitingNext;
+    if (earnable) b.classList.add('is-earnable');
     if ((key === 'freeze' && session.freeze) || (key === 'shield' && session.shield)) {
       b.classList.add('is-active');
       b.disabled = true;
     }
-    b.title = p.blurb;
+    b.title = earnable
+      ? `${p.blurb} — watch a short advert to use it free`
+      : p.blurb;
     b.append(
       el('span', 'pu-name', `${PU_ICON[key]} ${p.name}`),
-      el('span', 'pu-cost', `${p.cost} pts`),
+      el('span', 'pu-cost', earnable ? '▶ free' : `${p.cost} pts`),
     );
-    b.addEventListener('click', () => onPowerup(key));
+    b.addEventListener('click', () => (earnable ? onEarnPowerup(key) : onPowerup(key)));
     box.appendChild(b);
   }
 }
@@ -494,9 +511,57 @@ function finishRun() {
     setTimeout(() => toast(`Achievement: ${a.name}`, 'is-ach'), 400 + i * 700));
 }
 
-function onPowerup(key) {
+/**
+ * Earn a power-up by watching a rewarded advert.
+ *
+ * Nothing is forced: this only runs because the player tapped a power-up they
+ * cannot afford and chose to watch. If the advert fails, is closed early, or
+ * never loads, the run carries on untouched — a broken advert must never cost
+ * anyone their place in a quiz.
+ */
+async function onEarnPowerup(key) {
+  if (!session || awaitingNext || adPending) return;
+  const p = POWERUPS[key];
+  const ok = window.confirm(
+    `Watch a short advert to use ${p.name} free?
+
+`
+    + 'Your points and your league are not affected either way.');
+  if (!ok) return;
+
+  adPending = true;
+  const clock = $('timerText');
+  const before = clock.textContent;
+  // Freeze the visible clock while an advert plays, so nobody loses a question
+  // to an advert they agreed to watch.
+  const wasFrozen = session.freeze;
+  session = { ...session, freeze: true };
+  try {
+    toast('Loading advert…');
+    const result = await watchRewarded({
+      onProgress: left => { clock.textContent = String(left); },
+    });
+    clock.textContent = before;
+    session = { ...session, freeze: wasFrozen };
+    if (!result.watched) {
+      toast(result.reason ? `No advert: ${result.reason}` : 'No advert available', 'is-bad');
+      renderPowerups();
+      return;
+    }
+    onPowerup(key, { free: true });
+  } catch {
+    clock.textContent = before;
+    session = { ...session, freeze: wasFrozen };
+    toast('Advert could not load', 'is-bad');
+  } finally {
+    adPending = false;
+    renderPowerups();
+  }
+}
+
+function onPowerup(key, { free = false } = {}) {
   if (!session || awaitingNext) return;
-  const r = usePowerup(session, key);
+  const r = usePowerup(session, key, { free });
   session = r.state;
   if (!r.ok) { toast(r.message, 'is-bad'); return; }
   toast(r.message, 'is-good');

@@ -140,6 +140,41 @@ ranges for topics that accept one — mostly arithmetic and early algebra. For
 advanced topics difficulty is the clock alone, which is honest: "harder
 integration by parts" is a different question, not a bigger one.
 
+## 5b. Adverts: rewarded only, and never worth points
+
+`ads-config.js` is the only file to edit to switch adverts on. It ships with
+`provider: 'off'`, so a fresh install shows nothing to anyone.
+
+**Rewarded adverts only. Never add a banner, interstitial or pop-up.** This is
+Benjamin's decision, recorded in the business plan. Forced formats pay roughly a
+third of rewarded, put the app at risk under Google Play's Families Policy
+(children use it), and make it unsellable to schools — which is the most
+valuable route the project has. There is a test that fails if a banner or
+interstitial provider ever appears.
+
+**The reward is a power-up, never points.** Power-ups are bought with the
+SCORE, so paying an advert reward in points would let anyone buy league rank by
+watching adverts — the same farming problem practice runs avoid. `usePowerup(s,
+key, { free: true })` applies the power-up and leaves the score alone.
+
+Other rules that must hold:
+
+- `nonPersonalisedOnly` stays `true`. Personalised adverts to under-13s breach
+  COPPA and Play's Families Policy.
+- A provider must never throw or reject. A failed advert is a shrug, not an
+  error in the middle of someone's maths — `watchRewarded()` catches everything
+  and returns `{ watched: false }`.
+- The clock is frozen while an advert plays, so nobody loses a question to an
+  advert they agreed to watch.
+- The daily cap and cooldown exist so the app stays a game rather than an
+  advert delivery machine. Do not remove them.
+- Advert code is loaded lazily, only when someone actually asks for an advert.
+  A player who never taps the offer downloads no advertising code at all, which
+  also keeps the offline build clean.
+
+`src/privacy.html` describes all of this in plain language and is required for
+a Play Store listing. Keep it truthful if any of the above changes.
+
 ## 6. Architecture
 
 Deliberate separation — keep it.
@@ -191,7 +226,7 @@ UI shows that sentence. Do not replace them with `NaN`.
 ## 7. Testing
 
 ```bash
-npm test                      # 186 tests, node's built-in runner
+npm test                      # 202 tests, node's built-in runner
 node tools/test-subpath.mjs   # deployment safety
 npm run serve                 # dev server on :5173
 ```

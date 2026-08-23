@@ -155,19 +155,29 @@ export function timeOut(s) {
  * Use a power-up. Returns {state, ok, message}.
  * Costs are deducted from the live score.
  */
-export function usePowerup(s, key) {
+/**
+ * Use a power-up.
+ *
+ * `free` is set when the player earned this one by watching a rewarded advert.
+ * A free power-up costs no points, and deliberately so: power-ups are paid for
+ * out of the SCORE, so paying the advert reward in points would let anyone buy
+ * league rank by watching adverts. The reward is the power-up itself, never
+ * points, and the league stays something you earn by answering questions.
+ */
+export function usePowerup(s, key, { free = false } = {}) {
   const p = POWERUPS[key];
   if (!p) return { state: s, ok: false, message: 'Unknown power-up.' };
-  if (!canAfford(s.score, key)) {
+  if (!free && !canAfford(s.score, key)) {
     return { state: s, ok: false, message: `Need ${p.cost} points for ${p.name}.` };
   }
-  const score = buyPowerup(s.score, key);
+  const score = free ? s.score : buyPowerup(s.score, key);
 
   switch (key) {
     case 'skip': {
       const spent = { ...s, score, skipped: s.skipped + 1, index: s.index + 1,
         history: [...s.history, { prompt: s.question.promptPlain, topic: s.question.topic,
-          correct: null, given: null, answer: s.question.answer, delta: -p.cost }] };
+          correct: null, given: null, answer: s.question.answer,
+          delta: free ? 0 : -p.cost }] };
       return { state: nextQuestion(spent), ok: true, message: 'Skipped.' };
     }
     case 'fifty': {
