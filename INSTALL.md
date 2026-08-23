@@ -1,10 +1,36 @@
 # Installing MathLeague
 
-MathLeague works three ways: as a Windows desktop app, as an installed app on
-an Android phone, and as an installed app on an iPhone/iPad. Pick the one you
-need below. None of them need an app store account, and all of them work
-fully offline once installed (see the note at the very end for the one
-exception).
+MathLeague works four ways: straight in a web browser, as a Windows desktop
+app, as an installed app on an Android phone, and as an installed app on an
+iPhone/iPad. Pick the one you need below. None of them need an app store
+account, and all of them work fully offline once installed (see the note at
+the very end for the one exception).
+
+---
+
+## 0. PLAY IN A BROWSER (easiest — nothing to install)
+
+Once the project is published to GitHub Pages, the game has a permanent
+public address that works on any device, anywhere — this PC does not need to
+be switched on.
+
+**The address is:**
+
+```
+https://YOUR-GITHUB-USERNAME.github.io/mathleague-benji/
+```
+
+*(Replace `YOUR-GITHUB-USERNAME` with the GitHub account the project was
+published under. Until the project is pushed to GitHub, this link does not
+exist yet — see the note at the bottom of this file.)*
+
+Open that link in any browser and play immediately. From that same link you
+can also install it to a phone's home screen — follow the Android or iPhone
+sections below, but use this address instead of the `192.168...` one, and
+skip the "start the server" and "find the IP address" steps entirely.
+
+The site republishes itself automatically about a minute after any change is
+pushed to the project's main branch on GitHub.
 
 ---
 
