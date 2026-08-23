@@ -23,3 +23,8 @@ ehthumbs.db
 .idea/
 *.swp
 *.swo
+
+# Business planning stays OUT of this public repo. PROJECT.md and HANDBOOK.md
+# are committed on purpose; anything about pricing, revenue or strategy is not.
+.benji/BUSINESS.md
+.benji/private/
