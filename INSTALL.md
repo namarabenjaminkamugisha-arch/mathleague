@@ -34,6 +34,21 @@ pushed to the project's main branch on GitHub.
 
 ---
 
+## THE CALCULATOR
+
+Alongside the game there is a full scientific calculator, reached from the
+**Use Calculator** button on the home screen, below the league ladder.
+
+It handles brackets and proper operator precedence, powers and roots, logs,
+trigonometry in degrees or radians (with inverse functions), factorial,
+percent and remainder, and the constants pi and e. There are memory keys
+(MC, MR, M+, M-), an ANS key that reuses your last answer, a running preview
+of the result as you type, and a history of your last twenty calculations
+that you can tap to reuse. It works offline like the rest of the app, and
+the keyboard works as well as the buttons.
+
+---
+
 ## 1. WINDOWS
 
 **Where the installer is:**
@@ -162,14 +177,23 @@ Wi‑Fi required.
 
 ## UPDATING THE APP LATER
 
-- **Windows desktop:** build a new installer (`npm run dist`) and have people
-  run the new `.exe` — it installs over the old version and keeps saved
-  scores.
-- **Android / iPhone home-screen app:** just update the files on whichever
-  server or hosting you used. The service worker checks for a new version
-  each time the app is opened with an internet connection, downloads it
-  quietly, and the new version is used the next time the app is closed and
-  reopened. Nothing needs reinstalling.
+- **Browser and home-screen app (Android, iPhone, computer):** nothing to do.
+  Pushing to `main` redeploys the site automatically, and the app picks the
+  update up the next time it is opened with an internet connection. It then
+  reloads itself straight away, so the new version is in use immediately
+  rather than on some later visit. Nothing needs reinstalling, and saved
+  progress is untouched.
+
+  One rule when releasing: **bump `VERSION` in `src/sw.js`** (for example
+  `mathleague-v2` to `mathleague-v3`), and add any new file to the `ASSETS`
+  list there. An installed app is served from its own cache, so without a new
+  version string people keep running the old files and the update never
+  reaches them.
+
+- **Windows desktop:** there is no auto-update. Build a new installer
+  (`npm run dist`), publish it on the Releases page, and people download and
+  run it. It installs over the old version and keeps saved scores. This is
+  another reason to point people at the website instead.
 
 ---
 

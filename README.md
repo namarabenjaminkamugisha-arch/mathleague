@@ -19,6 +19,10 @@ nothing to install, and it keeps working with no internet once you have opened i
   answer teaches you something instead of just costing you points.
 - **Six leagues** — Bronze, Silver, Gold, Diamond, Platinum, Vibranium.
 - **Your progress is saved on your device.** No account, no sign-up, no server.
+- **A built-in scientific calculator**, from the *Use Calculator* button on the
+  home screen: brackets, powers, roots, logs, trigonometry in degrees or
+  radians, factorial, percent, memory keys and a history of your last 20
+  calculations.
 
 ## Playing it
 
@@ -41,7 +45,7 @@ Full details in [INSTALL.md](INSTALL.md).
 
 ```bash
 npm install
-npm test     # 100 tests
+npm test     # 129 tests
 npm run serve
 ```
 
@@ -60,7 +64,7 @@ npm run dist     # build the Windows installer into dist/
 | `src/` | The entire app. Deployed to GitHub Pages exactly as it is. |
 | `src/js/` | Question generation, scoring, sessions, storage, explanations. |
 | `src/sw.js` | Service worker — precaches everything so it runs offline. |
-| `tests/` | 100 tests over scoring, sessions, storage, questions, explanations. |
+| `tests/` | 129 tests over scoring, sessions, storage, questions, explanations, calculator. |
 | `electron/` | Wrapper that turns the same `src/` into a desktop app. |
 | `tools/` | Icon generation, a dev server, and the subpath deployment check. |
 
