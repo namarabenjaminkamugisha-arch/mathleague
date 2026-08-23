@@ -6,6 +6,7 @@ import { generateQuestion, checkAnswer } from './questions.js';
 import {
   resolveAnswer, leagueForScore, POWERUPS, buyPowerup, canAfford,
 } from './scoring.js';
+import { planFor } from './curriculum.js';
 
 export const QUESTION_SECONDS = 45;
 export const RUN_LENGTH = 10;          // questions per run
@@ -19,8 +20,9 @@ export function timeBonusFor(secondsLeft, total = QUESTION_SECONDS) {
 }
 
 /** A brand-new session for a player profile. */
-export function startSession(profile, { length = RUN_LENGTH } = {}) {
+export function startSession(profile, { length } = {}) {
   const league = leagueForScore(profile.score);
+  const plan = planFor(league.key);
   const s = {
     score: profile.score,
     startScore: profile.score,
@@ -29,7 +31,7 @@ export function startSession(profile, { length = RUN_LENGTH } = {}) {
     dailyStreak: profile.dailyStreak || 1,
     league: league.key,
     index: 0,
-    length,
+    length: length || plan.questions,
     correct: 0,
     wrong: 0,
     skipped: 0,
@@ -40,7 +42,10 @@ export function startSession(profile, { length = RUN_LENGTH } = {}) {
     fiftyOptions: null,
     revealed: 0,
     question: null,
-    secondsLeft: QUESTION_SECONDS,
+    // null means untimed - the top league needs real working, and a clock
+    // would only rush it. Everything downstream must handle null, not 0.
+    secondsLeft: plan.seconds,
+    questionSeconds: plan.seconds,
     finished: false,
   };
   return nextQuestion(s);
@@ -51,11 +56,13 @@ export function nextQuestion(s) {
   if (s.index >= s.length) return { ...s, finished: true, question: null };
   const league = leagueForScore(s.score).key;
   const q = generateQuestion(league, s.recentTopics.slice(-3));
+  const plan = planFor(league);
   return {
     ...s,
     league,
     question: q,
-    secondsLeft: QUESTION_SECONDS,
+    secondsLeft: plan.seconds,
+    questionSeconds: plan.seconds,
     freeze: false,
     fiftyOptions: null,
     revealed: 0,
@@ -71,7 +78,10 @@ export function submitAnswer(s, raw) {
   if (!s.question || s.finished) return { state: s, outcome: null };
   const q = s.question;
   const { correct, value } = checkAnswer(q, raw);
-  const timeBonus = correct ? timeBonusFor(s.secondsLeft) : 0;
+  // No clock means no speed bonus - rewarding haste on a question that needs
+  // a page of working would be exactly the wrong incentive.
+  const timeBonus = correct && s.questionSeconds
+    ? timeBonusFor(s.secondsLeft, s.questionSeconds) : 0;
 
   const r = resolveAnswer({
     score: s.score,
@@ -113,6 +123,8 @@ export function submitAnswer(s, raw) {
 /** Timer tick. Returns {state, expired}. */
 export function tick(s) {
   if (s.finished || !s.question || s.freeze) return { state: s, expired: false };
+  // An untimed league has no clock to run down, so it can never expire.
+  if (s.secondsLeft === null) return { state: s, expired: false };
   const secondsLeft = s.secondsLeft - 1;
   if (secondsLeft <= 0) return { state: { ...s, secondsLeft: 0 }, expired: true };
   return { state: { ...s, secondsLeft }, expired: false };

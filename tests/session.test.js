@@ -5,6 +5,7 @@ import {
   startSession, nextQuestion, submitAnswer, tick, timeOut, usePowerup,
   summarise, timeBonusFor, QUESTION_SECONDS, RUN_LENGTH,
 } from '../src/js/session.js';
+import { planFor } from '../src/js/curriculum.js';
 import { POWERUPS } from '../src/js/scoring.js';
 import { emptyProfile } from '../src/js/storage.js';
 
@@ -13,10 +14,10 @@ const profile = (over = {}) => ({ ...emptyProfile(), ...over });
 test('a new session starts with a question and a full clock', () => {
   const s = startSession(profile());
   assert.ok(s.question, 'expected a question');
-  assert.equal(s.secondsLeft, QUESTION_SECONDS);
+  assert.equal(s.secondsLeft, planFor(s.league).seconds);
   assert.equal(s.index, 0);
   assert.equal(s.finished, false);
-  assert.equal(s.length, RUN_LENGTH);
+  assert.equal(s.length, planFor(s.league).questions);
 });
 
 test('answering correctly raises the score and the streak', () => {
@@ -42,7 +43,7 @@ test('answering wrongly costs points and resets the streak', () => {
 
 test('the score can never go negative through a whole bad run', () => {
   let s = startSession(profile({ score: 3 }));
-  for (let i = 0; i < RUN_LENGTH; i++) {
+  for (let i = 0; i < s.length; i++) {
     if (!s.question) break;
     s = submitAnswer(s, '-99999').state;
     if (!s.finished) s = nextQuestion(s);
@@ -50,16 +51,18 @@ test('the score can never go negative through a whole bad run', () => {
   assert.ok(s.score >= 0, `score went negative: ${s.score}`);
 });
 
-test('a run finishes after exactly RUN_LENGTH questions', () => {
+test('a run finishes after exactly as many questions as its league plans', () => {
   let s = startSession(profile());
+  const planned = s.length;
   let guard = 0;
-  while (!s.finished && guard++ < 50) {
-    s = submitAnswer(s, String(s.question.answer)).state;
+  while (!s.finished && guard++ < 60) {
+    s = submitAnswer(s, s.question.kind === 'choice'
+        ? s.question.answerIndex : String(s.question.answer)).state;
     s = nextQuestion(s);
   }
   assert.equal(s.finished, true);
-  assert.equal(s.index, RUN_LENGTH);
-  assert.equal(s.correct, RUN_LENGTH);
+  assert.equal(s.index, planned);
+  assert.equal(s.correct, planned);
 });
 
 test('the clock ticks down and expiry is reported once', () => {
@@ -162,7 +165,8 @@ test('the summary adds up and detects promotion', () => {
   let s = startSession(profile({ score: 240 }));   // just under Silver
   let guard = 0;
   while (!s.finished && guard++ < 50) {
-    s = submitAnswer(s, String(s.question.answer)).state;
+    s = submitAnswer(s, s.question.kind === 'choice'
+        ? s.question.answerIndex : String(s.question.answer)).state;
     s = nextQuestion(s);
   }
   const sum = summarise(s);
@@ -177,7 +181,8 @@ test('questions do not repeat the same topic three times running', () => {
   const topics = [];
   for (let i = 0; i < 8; i++) {
     topics.push(s.question.topicKey);
-    s = submitAnswer(s, String(s.question.answer)).state;
+    s = submitAnswer(s, s.question.kind === 'choice'
+        ? s.question.answerIndex : String(s.question.answer)).state;
     if (s.finished) break;
     s = nextQuestion(s);
   }

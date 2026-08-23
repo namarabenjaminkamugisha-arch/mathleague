@@ -13,6 +13,7 @@ import {
 } from './storage.js';
 import { fmt } from './util.js';
 import { initCalculator, focusCalculator } from './calc-ui.js';
+import { LEAGUE_ORDER, planFor } from './curriculum.js';
 
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -108,14 +109,26 @@ function renderDots() {
 }
 
 function renderTimer() {
-  const total = QUESTION_SECONDS;
+  const total = session.questionSeconds;
   const left = session.secondsLeft;
   const CIRC = 2 * Math.PI * 17;
   $('timerArc').style.strokeDasharray = String(CIRC);
+
+  // The top league is untimed: show a full, calm ring rather than a clock
+  // counting down on a question that deserves a page of working.
+  if (total === null || left === null) {
+    $('timerArc').style.strokeDashoffset = '0';
+    $('timerText').textContent = '∞';
+    $('timer').classList.remove('is-low', 'is-frozen');
+    $('timer').title = 'No time limit in this league — take as long as you need.';
+    return;
+  }
+
   $('timerArc').style.strokeDashoffset = String(CIRC * (1 - left / total));
   $('timerText').textContent = session.freeze ? '❄' : left;
   $('timer').classList.toggle('is-low', left <= 10 && !session.freeze);
   $('timer').classList.toggle('is-frozen', !!session.freeze);
+  $('timer').title = `${left} seconds left`;
 }
 
 function renderPowerups() {
@@ -156,8 +169,29 @@ function renderSteps(container, steps, limit = Infinity) {
   container.replaceChildren(ol);
 }
 
+/**
+ * Multiple-choice questions replace the answer box with four buttons.
+ * Tapping one submits it - there is no second "Submit" step, which would only
+ * add a tap without adding a decision.
+ */
+function renderChoices(q) {
+  const box = $('choices');
+  box.replaceChildren();
+  q.choices.forEach((text, i) => {
+    const b = el('button', 'choice');
+    b.type = 'button';
+    b.dataset.index = String(i);
+    b.append(el('span', 'choice-key', String.fromCharCode(65 + i)),
+             el('span', 'choice-text', text));
+    b.addEventListener('click', () => onChoice(i));
+    box.appendChild(b);
+  });
+  box.hidden = false;
+}
+
 function renderQuestion() {
   const q = session.question;
+  const isChoice = q.kind === 'choice';
   $('qTopic').textContent = q.topic;
   $('qPrompt').textContent = q.prompt;
   $('qHint').textContent = q.hint || '';
@@ -168,11 +202,34 @@ function renderQuestion() {
   $('answerInput').disabled = false;
   $('btnSubmit').disabled = false;
   $('btnSubmit').textContent = 'Submit';
+
+  // Hide the input, not the whole form: the form also carries the button that
+  // becomes "Next question" after answering.
+  $('answerInput').hidden = isChoice;
+  $('btnSubmit').hidden = isChoice;
+  $('choices').hidden = !isChoice;
+  if (isChoice) renderChoices(q);
+
   renderDots();
   renderTimer();
   renderPowerups();
   renderHeader();
-  $('answerInput').focus();
+  if (!isChoice) $('answerInput').focus();
+}
+
+function onChoice(index) {
+  if (awaitingNext || !session || !session.question) return;
+  const { state, outcome } = submitAnswer(session, index);
+  session = state;
+  // Mark the picked option and the right one, so a miss is legible at a glance.
+  for (const b of $('choices').querySelectorAll('.choice')) {
+    const i = Number(b.dataset.index);
+    b.disabled = true;
+    if (i === session.question?.answerIndex) { /* already advanced */ }
+    if (i === index) b.classList.add(outcome.correct ? 'is-right' : 'is-wrong');
+    if (i === outcome.question.answerIndex) b.classList.add('is-right');
+  }
+  showFeedback(outcome, false);
 }
 
 // ── the loop ────────────────────────────────────────────────
@@ -237,7 +294,8 @@ function showFeedback(outcome, timedOut) {
     head.textContent = msg;
   } else {
     const why = timedOut ? 'Time up' : outcome.close ? 'So close' : 'Not quite';
-    head.textContent = `${why}  ${outcome.delta}  ·  answer: ${fmt(q.answer)}`;
+    const shown = q.kind === 'choice' ? q.answer : fmt(q.answer);
+    head.textContent = `${why}  ${outcome.delta}  ·  answer: ${shown}`;
     $('questionCard').classList.remove('shake');
     void $('questionCard').offsetWidth;
     $('questionCard').classList.add('shake');
@@ -257,6 +315,7 @@ function showFeedback(outcome, timedOut) {
   }
 
   $('answerInput').disabled = true;
+  $('btnSubmit').hidden = false;           // becomes "Next question"
   $('btnSubmit').disabled = false;
   $('btnSubmit').textContent = session.index >= session.length ? 'See results' : 'Next question';
   $('btnSubmit').focus();
@@ -426,8 +485,20 @@ function renderAchievements() {
 
 function renderHelp() {
   $('helpBody').innerHTML = `
-    <p>Each run is ${'10'} questions. You have ${QUESTION_SECONDS} seconds per question.
-       Answer fast for a speed bonus.</p>
+    <p>Each league sets its own run: the harder the maths, the fewer questions
+       and the more time you get. Answer fast for a speed bonus, except in
+       Vibranium, which has no clock at all.</p>
+    <h3>What each league asks</h3>
+    <table class="help-table"><tbody>${LEAGUE_ORDER.map(k => {
+      const p = planFor(k);
+      return `<tr><td><strong>${p.label}</strong></td><td>${p.stage}</td>`
+        + `<td>${p.questions} questions</td>`
+        + `<td>${p.seconds === null ? 'no time limit' : p.seconds + 's each'}</td></tr>`;
+    }).join('')}</tbody></table>
+    <p class="help-note">Topics follow the Ugandan syllabus, from UNEB O-level
+       through A-level Pure Maths to first-year university, in the order used by
+       Backhouse's <em>Pure Mathematics</em> and <em>Understanding Pure
+       Mathematics</em>.</p>
     <h3>Scoring</h3>
     <ul>
       <li>A correct answer pays <strong>10–24 points</strong>, depending on how hard the topic is.</li>
@@ -442,6 +513,9 @@ function renderHelp() {
     <ul>
       <li>Type decimals (<code>2.5</code>) or fractions (<code>3/4</code>).</li>
       <li>Percent signs and commas are ignored, so <code>25%</code> and <code>1,200</code> are fine.</li>
+      <li>Some questions are multiple choice — tap an option and it is submitted.
+          These are used where the answer is an expression rather than a number,
+          such as a derivative or an integral.</li>
       <li>Get one wrong and the full working is shown, line by line.</li>
     </ul>
     <h3>Power-ups</h3>

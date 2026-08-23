@@ -8,21 +8,15 @@ import {
   explainFraction, explainPercentOf, explainPercentChange,
   explainPower, explainRoot, explainLinear, explainSimplify,
 } from './explain-advanced.js';
+import { ADVANCED_GENERATORS, planFor } from './curriculum.js';
 
 /**
- * Topic pools per league tier. Higher leagues unlock harder topics AND
- * push the number ranges up within each topic.
+ * Which topics each league asks now lives in curriculum.js, alongside the
+ * question count and time allowance. What stays here is the difficulty
+ * *level* handed to the older arithmetic generators, which take 1-4.
  */
-export const TIER_TOPICS = {
-  1: ['add', 'sub', 'mul', 'div'],
-  2: ['add', 'sub', 'mul', 'div', 'fraction', 'percent'],
-  3: ['mul', 'div', 'fraction', 'percent', 'percentChange', 'power', 'root'],
-  4: ['fraction', 'percent', 'percentChange', 'power', 'root', 'linear', 'simplify'],
-};
-
-/** Which tier does a league key map to. */
 export const LEAGUE_TIER = {
-  bronze: 1, silver: 1, gold: 2, diamond: 3, platinum: 3, vibranium: 4,
+  bronze: 1, silver: 2, gold: 3, diamond: 4, platinum: 4, vibranium: 4,
 };
 
 // ── individual generators ───────────────────────────────────
@@ -190,29 +184,66 @@ function makeOptions(answer) {
  * @param {string} leagueKey
  * @param {string[]} [avoidTopics] recently used topics to reduce repeats
  */
+/**
+ * The working is rendered as { text, detail } objects. The curriculum
+ * generators write plain strings because that keeps them readable, so they
+ * are converted here - a raw string would render as a blank line, which is
+ * exactly the "shows you the working" promise quietly failing.
+ */
+function normaliseSteps(steps) {
+  return (steps || [])
+    .map(s => (typeof s === 'string' ? { text: s } : s))
+    .filter(s => s && typeof s.text === 'string' && s.text.trim());
+}
+
+/** −0 prints as "-0", which looks like a mistake to a student. */
+const zeroSafe = n => (typeof n === 'number' && n === 0 ? 0 : n);
+
 export function generateQuestion(leagueKey = 'bronze', avoidTopics = []) {
   const tier = LEAGUE_TIER[leagueKey] || 1;
-  let pool = TIER_TOPICS[tier];
+  let pool = planFor(leagueKey).topics;
   const fresh = pool.filter(t => !avoidTopics.includes(t));
   if (fresh.length >= 2) pool = fresh;
 
   const topicKey = pick(pool);
-  const q = GENERATORS[topicKey](tier);
+  const generator = GENERATORS[topicKey] || ADVANCED_GENERATORS[topicKey];
+  if (!generator) throw new Error(`no generator for topic "${topicKey}"`);
+  const q = generator(tier);
 
-  const answerValue = typeof q.answer === 'number' ? round(q.answer, 4) : q.answer;
-  return {
+  const base = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     topicKey,
     topic: q.topic,
     tier,
+    league: leagueKey,
     prompt: q.prompt,
     promptPlain: q.promptPlain || q.prompt,
     hint: q.hint || null,
     unit: q.unit || null,
+    steps: normaliseSteps(q.steps),
+    alternatives: q.alternatives || [],
+  };
+
+  // Multiple choice: the options ARE the question, so there is nothing to
+  // parse and nothing to round. Marking is by which option was picked.
+  if (q.kind === 'choice') {
+    return {
+      ...base,
+      kind: 'choice',
+      choices: q.choices,
+      answerIndex: q.answerIndex,
+      answer: q.answerText,
+      options: q.choices,
+    };
+  }
+
+  const answerValue = typeof q.answer === 'number'
+    ? zeroSafe(round(q.answer, 4)) : q.answer;
+  return {
+    ...base,
+    kind: 'numeric',
     answer: answerValue,
     acceptText: q.acceptText || null,
-    steps: q.steps,
-    alternatives: q.alternatives || [],
     options: makeOptions(answerValue),
     expression: q.expression || null,
   };
@@ -223,6 +254,19 @@ export function generateQuestion(leagueKey = 'bronze', avoidTopics = []) {
  * and tolerates tiny rounding differences.
  */
 export function checkAnswer(question, raw) {
+  // A multiple-choice answer arrives as the index of the chosen option, so
+  // there is no text to interpret and no tolerance to apply.
+  if (question.kind === 'choice') {
+    const index = Number(raw);
+    if (!Number.isInteger(index) || index < 0 || index >= question.choices.length) {
+      return { correct: false, value: null };
+    }
+    return {
+      correct: index === question.answerIndex,
+      value: question.choices[index],
+    };
+  }
+
   const text = String(raw ?? '').trim().replace(/\s+/g, '').replace(/[,%]/g, '');
   if (!text) return { correct: false, value: null };
 
@@ -244,6 +288,10 @@ export function checkAnswer(question, raw) {
   if (value === null || !isFinite(value)) return { correct: false, value: null };
 
   const target = Number(question.answer);
-  const tol = Math.max(1e-6, Math.abs(target) * 1e-6, 0.005);
+  // A RELATIVE tolerance is wrong for whole-number answers: 6⁹ is 10,077,696,
+  // and a millionth of that is ±10, so a student could be seven out and still
+  // be marked right. Whole numbers must match exactly; only genuinely decimal
+  // answers get slack, and then only enough to cover 4-decimal rounding.
+  const tol = Number.isInteger(target) ? 1e-9 : 0.005;
   return { correct: Math.abs(value - target) <= tol, value };
 }
