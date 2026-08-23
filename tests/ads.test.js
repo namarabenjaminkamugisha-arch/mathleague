@@ -160,3 +160,23 @@ test('a watched advert pays exactly one reward', async () => {
     providerFor('test').show = original;
   }
 });
+
+test('a half-finished configuration shows nothing', () => {
+  // Setting the provider but forgetting the publisher ID would otherwise show
+  // the offer while no advert could ever load: the player taps "free", waits,
+  // and gets nothing. Treat it exactly like adverts being switched off.
+  const r = canWatch({
+    config: cfg({ provider: 'h5games', publisherId: '' }),
+    state: freshState(),
+  });
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, BLOCKED.OFF);
+});
+
+test('a complete configuration does show the offer', () => {
+  const r = canWatch({
+    config: cfg({ provider: 'h5games', publisherId: 'ca-pub-1234567890123456' }),
+    state: freshState(),
+  });
+  assert.equal(r.ok, true);
+});

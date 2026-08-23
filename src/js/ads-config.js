@@ -17,7 +17,11 @@ export const ADS = {
   provider: 'off',
 
   // Your AdSense publisher ID, e.g. 'ca-pub-0000000000000000'.
-  // Required only when provider is 'h5games'.
+  //
+  // BOTH lines must change to switch adverts on: this one AND `provider`
+  // above. Pasting the ID alone changes nothing, and setting the provider
+  // without an ID is treated as 'off' rather than offering an advert that
+  // could never load.
   publisherId: '',
 
   // Children use this app. Non-personalised adverts are required for them

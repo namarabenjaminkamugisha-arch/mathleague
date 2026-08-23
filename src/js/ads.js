@@ -76,6 +76,12 @@ export function canWatch({ config = ADS, state = null, now = Date.now() } = {}) 
   if (!config || config.provider === 'off') {
     return { ok: false, reason: BLOCKED.OFF };
   }
+  // A real provider with no publisher ID cannot ever load an advert. Offering
+  // one anyway would have the player tap "free", wait, and get nothing — so a
+  // half-finished configuration behaves exactly like adverts being off.
+  if (config.provider === 'h5games' && !String(config.publisherId || '').trim()) {
+    return { ok: false, reason: BLOCKED.OFF };
+  }
   const s = state || loadState();
   const limit = Number(config.dailyLimit) || 0;
   if (limit > 0 && s.watched >= limit) {
