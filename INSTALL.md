@@ -17,12 +17,12 @@ be switched on.
 **The address is:**
 
 ```
-https://YOUR-GITHUB-USERNAME.github.io/mathleague-benji/
+https://namarabenjaminkamugisha-arch.github.io/mathleague/
 ```
 
-*(Replace `YOUR-GITHUB-USERNAME` with the GitHub account the project was
-published under. Until the project is pushed to GitHub, this link does not
-exist yet — see the note at the bottom of this file.)*
+*(Nothing to install. The page works on any modern browser — phone, tablet
+or computer — and keeps working offline once you have opened it, because the
+service worker stores it on the device.)*
 
 Open that link in any browser and play immediately. From that same link you
 can also install it to a phone's home screen — follow the Android or iPhone
@@ -38,7 +38,7 @@ pushed to the project's main branch on GitHub.
 
 **Where the installer is:**
 `dist\MathLeague-Setup-1.0.0.exe` inside the project folder
-`C:\Users\LENOVO\Projects\mathleague-benji`
+`C:\Users\LENOVO\Projects\mathleague`
 It is about 78 MB.
 
 **Steps:**
@@ -150,7 +150,7 @@ someone anywhere install it, put the app on free hosting instead:
   page in a browser; it gives you a public `https://something.netlify.app`
   link in seconds. No account needed for a quick drop.
 - **GitHub Pages** — free if the project is pushed to a GitHub repository;
-  turns it into `https://yourname.github.io/mathleague`.
+  turns it into `https://namarabenjaminkamugisha-arch.github.io/mathleague`.
 - **Cloudflare Pages** or **Vercel** — also free tiers, similar drag-and-drop
   or connect-a-repo flow.
 

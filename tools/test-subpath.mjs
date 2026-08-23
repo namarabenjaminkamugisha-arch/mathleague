@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SUBPATH = '/mathleague-benji/';
+const SUBPATH = '/mathleague/';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src');
 const port = 8123;
 
