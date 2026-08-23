@@ -1,0 +1,66 @@
+{
+  "name": "mathleague",
+  "productName": "MathLeague",
+  "version": "1.0.0",
+  "description": "MathLeague - a fast, offline-first maths practice game with leagues, streaks, power-ups and step-by-step explanations.",
+  "author": {
+    "name": "MathLeague",
+    "email": "hello@mathleague.app"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "icons": "node tools/generate-icons.mjs",
+    "test": "node --test \"tests/*.test.js\"",
+    "serve": "node tools/serve.mjs",
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --publish never",
+    "dist:portable": "electron-builder --win portable --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "app.mathleague.desktop",
+    "productName": "MathLeague",
+    "copyright": "Copyright (c) 2025 MathLeague",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "!src/**/*.map",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "MathLeague-Setup-${version}.${ext}",
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MathLeague",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#05070a">
+<title>MathLeague — train, streak, climb</title>
+<link rel="icon" href="icons/favicon.ico" sizes="any">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ── top bar ─────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="brand">
+      <img src="icons/icon.svg" alt="" class="brand-mark" width="30" height="30">
+      <span class="brand-name">MathLeague</span>
+    </div>
+
+    <div class="stats" id="stats">
+      <div class="stat" title="Your total points">
+        <span class="stat-label">Score</span>
+        <span class="stat-value" id="statScore">0</span>
+      </div>
+      <div class="stat" title="Correct answers in a row">
+        <span class="stat-label">Streak</span>
+        <span class="stat-value" id="statStreak">0</span>
+      </div>
+      <div class="stat" title="Days played in a row">
+        <span class="stat-label">Daily</span>
+        <span class="stat-value" id="statDaily">0</span>
+      </div>
+    </div>
+
+    <div class="league-chip" id="leagueChip" title="Your league">
+      <span class="league-dot" id="leagueDot"></span>
+      <span id="leagueName">Bronze</span>
+    </div>
+  </header>
+
+  <div class="league-bar" title="Progress to the next league">
+    <div class="league-bar-fill" id="leagueFill"></div>
+    <span class="league-bar-text" id="leagueNext"></span>
+  </div>
+
+  <!-- ── home ────────────────────────────────────────────── -->
+  <main class="screen is-active" id="screen-home">
+    <section class="hero">
+      <h1>Sharpen your maths.<br><span class="accent">Climb the league.</span></h1>
+      <p class="sub">Ten questions a run. Every answer comes with the working,
+         so a miss teaches you something.</p>
+      <button class="btn btn-primary btn-xl" id="btnPlay">Start a run</button>
+      <div class="hero-row">
+        <button class="btn btn-ghost" id="btnStats">Progress</button>
+        <button class="btn btn-ghost" id="btnAchievements">Achievements</button>
+        <button class="btn btn-ghost" id="btnHelp">How it works</button>
+      </div>
+    </section>
+
+    <section class="ladder" id="ladder"></section>
+  </main>
+
+  <!-- ── quiz ────────────────────────────────────────────── -->
+  <main class="screen" id="screen-quiz">
+    <div class="quiz-head">
+      <div class="progress-dots" id="progressDots"></div>
+      <div class="timer" id="timer">
+        <svg viewBox="0 0 40 40" class="timer-ring" aria-hidden="true">
+          <circle cx="20" cy="20" r="17" class="timer-track"/>
+          <circle cx="20" cy="20" r="17" class="timer-value" id="timerArc"/>
+        </svg>
+        <span class="timer-text" id="timerText">45</span>
+      </div>
+    </div>
+
+    <div class="card question-card" id="questionCard">
+      <div class="q-topic" id="qTopic">Addition</div>
+      <div class="q-prompt" id="qPrompt">—</div>
+      <div class="q-hint" id="qHint"></div>
+
+      <form class="answer-row" id="answerForm" autocomplete="off">
+        <input class="answer-input" id="answerInput" type="text"
+               inputmode="decimal" placeholder="Your answer"
+               aria-label="Your answer" spellcheck="false">
+        <button class="btn btn-primary" type="submit" id="btnSubmit">Submit</button>
+      </form>
+
+      <div class="options" id="options" hidden></div>
+      <div class="reveal" id="reveal" hidden></div>
+      <div class="feedback" id="feedback" hidden></div>
+    </div>
+
+    <div class="powerups" id="powerups"></div>
+    <button class="btn btn-quiet btn-end" id="btnQuit">End run</button>
+  </main>
+
+  <!-- ── result ──────────────────────────────────────────── -->
+  <main class="screen" id="screen-result">
+    <div class="card result-card">
+      <div class="result-badge" id="resultBadge">Run complete</div>
+      <div class="result-score" id="resultScore">+0</div>
+      <p class="result-sub" id="resultSub"></p>
+
+      <div class="result-grid" id="resultGrid"></div>
+
+      <div class="review" id="review"></div>
+
+      <div class="result-actions">
+        <button class="btn btn-primary btn-lg" id="btnAgain">Play again</button>
+        <button class="btn btn-ghost" id="btnHome">Home</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── progress ────────────────────────────────────────── -->
+  <main class="screen" id="screen-stats">
+    <div class="card">
+      <h2 class="card-title">Your progress</h2>
+      <div class="result-grid" id="statsGrid"></div>
+      <h3 class="sub-title">By topic</h3>
+      <div class="topic-list" id="topicList"></div>
+      <div class="result-actions">
+        <button class="btn btn-ghost" id="btnStatsBack">Back</button>
+        <button class="btn btn-danger" id="btnReset">Reset progress</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── achievements ────────────────────────────────────── -->
+  <main class="screen" id="screen-achievements">
+    <div class="card">
+      <h2 class="card-title">Achievements</h2>
+      <div class="ach-list" id="achList"></div>
+      <div class="result-actions">
+        <button class="btn btn-ghost" id="btnAchBack">Back</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── help ────────────────────────────────────────────── -->
+  <main class="screen" id="screen-help">
+    <div class="card">
+      <h2 class="card-title">How it works</h2>
+      <div class="prose" id="helpBody"></div>
+      <div class="result-actions">
+        <button class="btn btn-ghost" id="btnHelpBack">Back</button>
+      </div>
+    </div>
+  </main>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

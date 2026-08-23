@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Builds and packaging
+dist/
+build/
+out/
+
+# Environment and logs
+.env
+.env.*
+*.log
+serve.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System and editor files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
