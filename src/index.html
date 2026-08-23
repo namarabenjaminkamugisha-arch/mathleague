@@ -158,5 +158,14 @@
 </div>
 
 <script type="module" src="js/app.js"></script>
+<script>
+  // Register the service worker with a RELATIVE path and no explicit scope,
+  // so the app works from the site root or a subpath (e.g. GitHub Pages).
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => { /* offline-first is best-effort */ });
+    });
+  }
+</script>
 </body>
 </html>
