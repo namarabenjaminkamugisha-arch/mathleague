@@ -5,6 +5,13 @@ import { evaluate, format, bracketsBalanced, CalcError } from './calculator.js';
 
 const $ = id => document.getElementById(id);
 
+// Touch devices get no focus at all: even with the system keyboard suppressed,
+// focusing scrolls the display around under the user's thumb. On a desktop
+// focus is what keeps the caret visible, so it stays.
+const isTouch = () => !!(window.matchMedia
+  && window.matchMedia('(pointer: coarse)').matches);
+const keepCaret = input => { if (!isTouch()) input.focus(); };
+
 const HISTORY_KEY = 'mathleague.calc.history';
 const MAX_HISTORY = 20;
 
@@ -141,7 +148,7 @@ function insert(text) {
   input.value = input.value.slice(0, start) + text + input.value.slice(end);
   const caret = start + String(text).length;
   input.setSelectionRange(caret, caret);
-  input.focus();
+  keepCaret(input);
   preview();
 }
 
@@ -180,7 +187,7 @@ function negate() {
   // is what people mean when the box already holds an answer.
   input.value = text.startsWith('−') ? text.slice(1) : `−(${text})`;
   preview();
-  input.focus();
+  keepCaret(input);
 }
 
 function runAction(act) {
@@ -190,7 +197,7 @@ function runAction(act) {
       input.value = '';
       $('calcPreview').textContent = '';
       $('calcPreview').classList.remove('is-error');
-      input.focus();
+      keepCaret(input);
       break;
     case 'back': {
       const start = input.selectionStart ?? input.value.length;
@@ -202,7 +209,7 @@ function runAction(act) {
         input.value = input.value.slice(0, start - 1) + input.value.slice(start);
         input.setSelectionRange(start - 1, start - 1);
       }
-      input.focus();
+      keepCaret(input);
       preview();
       break;
     }
@@ -233,6 +240,39 @@ function updateMemoryFlag() {
   flag.title = `Memory holds ${format(memory)}`;
 }
 
+// ── physical keyboard ──────────────────────────────────────────────────────
+
+// Typed characters are mapped to the same symbols the buttons produce, so a
+// keyboard and the keypad put identical text in the display.
+const TYPED = {
+  '*': '×', x: '×', '/': '÷', '-': '−',
+  '+': '+', '^': '^', '(': '(', ')': ')', '!': '!', '%': '%', '.': '.',
+};
+
+function onKeyDown(e) {
+  // Only while the calculator is on screen, and never while the player is
+  // typing an answer during a run.
+  if (!$('screen-calc').classList.contains('is-active')) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;      // let copy/paste through
+  const target = e.target;
+  if (target && target !== $('calcInput')
+      && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+
+  const k = e.key;
+
+  if (k === 'Enter' || k === '=') { e.preventDefault(); equals(); return; }
+  if (k === 'Escape') { e.preventDefault(); runAction('clear'); return; }
+  if (k === 'Backspace') { e.preventDefault(); runAction('back'); return; }
+  if (k === 'Delete') { e.preventDefault(); runAction('clear'); return; }
+
+  if (/^[0-9]$/.test(k)) { e.preventDefault(); insert(k); return; }
+
+  if (Object.prototype.hasOwnProperty.call(TYPED, k)) {
+    e.preventDefault();
+    insert(TYPED[k]);
+  }
+}
+
 // ── wiring ─────────────────────────────────────────────────────────────────
 
 export function initCalculator() {
@@ -241,12 +281,23 @@ export function initCalculator() {
   renderHistory();
   updateMemoryFlag();
 
-  $('calcInput').addEventListener('input', preview);
+  const input = $('calcInput');
+  input.addEventListener('input', preview);
 
-  $('calcInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); equals(); }
-    if (e.key === 'Escape') { e.preventDefault(); runAction('clear'); }
-  });
+  // On a touch device the keypad IS the keyboard, so the display must never
+  // summon the system one - it covers half the screen and the keys underneath.
+  // inputmode="none" handles this on current browsers; readOnly is the belt
+  // and braces for older iOS, which ignores inputmode. Neither stops the
+  // buttons, which set the value in code, nor a real keyboard, which is
+  // handled below.
+  if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+    input.readOnly = true;
+  }
+
+  // Physical keyboards are handled on the document rather than the input, so
+  // they work whether or not the display has focus - and still work when the
+  // input is readOnly on a tablet with a keyboard attached.
+  document.addEventListener('keydown', onKeyDown);
 
   $('calcAngle').addEventListener('click', () => {
     degrees = !degrees;
@@ -271,6 +322,9 @@ export function initCalculator() {
 /** Called each time the screen is opened, so it always starts ready to type. */
 export function focusCalculator() {
   const input = $('calcInput');
+  // Deliberately does nothing on a phone: opening the calculator used to
+  // throw the on-screen keyboard up over the keypad every single time.
+  if (isTouch()) return;
   input.focus();
   input.setSelectionRange(input.value.length, input.value.length);
 }

@@ -85,7 +85,10 @@
       </div>
 
       <div class="calc-display">
-        <input class="calc-input" id="calcInput" type="text" inputmode="text"
+        <!-- inputmode="none" keeps the phone's on-screen keyboard down: the
+             keypad below is the input, and a system keyboard would cover it.
+             Physical keyboards still work - calc-ui.js listens for those. -->
+        <input class="calc-input" id="calcInput" type="text" inputmode="none"
                placeholder="0" aria-label="Calculation" spellcheck="false"
                autocomplete="off">
         <div class="calc-preview" id="calcPreview" aria-live="polite"></div>
