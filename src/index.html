@@ -64,6 +64,45 @@
     </section>
 
     <section class="ladder" id="ladder"></section>
+
+    <div class="calc-cta">
+      <button class="btn btn-calc" id="btnCalculator">Use Calculator</button>
+    </div>
+  </main>
+
+  <!-- ── calculator ──────────────────────────────────────── -->
+  <main class="screen" id="screen-calc">
+    <div class="card calc-card">
+      <div class="calc-head">
+        <h2 class="card-title">Calculator</h2>
+        <div class="calc-modes">
+          <button class="chip" id="calcAngle" type="button"
+                  title="Switch between degrees and radians">DEG</button>
+          <button class="chip" id="calcInv" type="button"
+                  title="Inverse functions: sin becomes asin">INV</button>
+          <span class="chip chip-mem" id="calcMemFlag" hidden>M</span>
+        </div>
+      </div>
+
+      <div class="calc-display">
+        <input class="calc-input" id="calcInput" type="text" inputmode="text"
+               placeholder="0" aria-label="Calculation" spellcheck="false"
+               autocomplete="off">
+        <div class="calc-preview" id="calcPreview" aria-live="polite"></div>
+      </div>
+
+      <div class="calc-keys" id="calcKeys"></div>
+
+      <div class="calc-history-wrap">
+        <h3 class="sub-title">History</h3>
+        <div class="calc-history" id="calcHistory"></div>
+      </div>
+
+      <div class="result-actions">
+        <button class="btn btn-ghost" id="btnCalcBack">Back</button>
+        <button class="btn btn-quiet" id="btnCalcClearHistory">Clear history</button>
+      </div>
+    </div>
   </main>
 
   <!-- ── quiz ────────────────────────────────────────────── -->
@@ -162,8 +201,24 @@
   // Register the service worker with a RELATIVE path and no explicit scope,
   // so the app works from the site root or a subpath (e.g. GitHub Pages).
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => { /* offline-first is best-effort */ });
+    // Whether this page was already being served by a worker. On a first ever
+    // visit it is null, and the reload below must not fire for that.
+    var hadController = !!navigator.serviceWorker.controller;
+    var refreshing = false;
+
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {
+        /* offline-first is best-effort */
+      });
+    });
+
+    // A new worker taking over means new files are ready. Without this the
+    // player keeps seeing the old version until they happen to open the app
+    // a second time - which for an installed app can be days.
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadController || refreshing) return;
+      refreshing = true;
+      window.location.reload();
     });
   }
 </script>

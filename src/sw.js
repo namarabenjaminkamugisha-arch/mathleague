@@ -3,7 +3,7 @@
 // works whether it is served from the site root or a subpath such as
 // GitHub Pages' /repo-name/.
 
-const VERSION = 'mathleague-v1';
+const VERSION = 'mathleague-v2';
 
 // All app assets, listed relative to this file's location.
 const ASSETS = [
@@ -18,6 +18,8 @@ const ASSETS = [
   './js/questions.js',
   './js/explain.js',
   './js/explain-advanced.js',
+  './js/calculator.js',
+  './js/calc-ui.js',
   './js/util.js',
   './icons/favicon.ico',
   './icons/icon.svg',

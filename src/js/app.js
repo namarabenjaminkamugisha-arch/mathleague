@@ -12,6 +12,7 @@ import {
   loadProfile, saveProfile, resetProfile, registerPlay, applyRun, ACHIEVEMENTS,
 } from './storage.js';
 import { fmt } from './util.js';
+import { initCalculator, focusCalculator } from './calc-ui.js';
 
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -465,6 +466,9 @@ function init() {
   $('btnAchievements').addEventListener('click', () => { renderAchievements(); show('achievements'); });
   $('btnAchBack').addEventListener('click', () => show('home'));
   $('btnHelp').addEventListener('click', () => { renderHelp(); show('help'); });
+  $('btnCalculator').addEventListener('click', () => { show('calc'); focusCalculator(); });
+  $('btnCalcBack').addEventListener('click', () => show('home'));
+  initCalculator();
   $('btnHelpBack').addEventListener('click', () => show('home'));
 
   $('btnReset').addEventListener('click', () => {
